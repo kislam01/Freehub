@@ -1,0 +1,42 @@
+body{
+background-image:linear-gradient(rgba(255,255,255,1),rgba(255,255,255,0.3)), url("index_background.jpg");
+background-size: 100% 100%;
+}
+
+#main-wrap > div { min-height: 450px; }
+
+
+#main-wrap {
+    /* overflow to handle inner floating block */
+    overflow: hidden;
+    width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#header{
+min-height: 40px;
+text-align: center;
+}
+
+#map_sidebar {
+    float: left;
+    width: 500px;
+    padding: 0px;
+    margin: 0px;
+}
+
+
+#map_canvas {
+width: 500px;
+height: 500px;
+}
+
+#list_events {
+	float: right;
+	width: 480px;
+	padding: 0px;
+	margin: 0px;
+    height:500px;
+    overflow:auto; 
+}

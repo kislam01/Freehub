@@ -1,0 +1,85 @@
+/* sizes */
+#main-wrap > div { min-height: 450px; }
+
+body
+{
+	background-image:linear-gradient(rgba(255,255,255,1),rgba(255,255,255,0.3)), url("imgs/background.jpg");
+	background-size: 100% 100%;
+}
+
+#header,
+#footer {
+    min-height: 40px;
+}
+
+/* layout */
+#main-wrap {
+    /* overflow to handle inner floating block */
+    overflow: hidden;
+}
+
+#sidebar {
+    float: left;
+    width: 50%;
+}
+
+#content-wrap {
+    float: right;
+    width: 50%;
+}   
+
+#map {
+    width: 100px;
+    height: 100px;
+  }
+#loginbutton
+{
+  position: absolute;
+  top: 5px;
+  right: 0px;
+  -webkit-border-radius: 16;
+  -moz-border-radius: 16;
+  border-radius: 16px;
+  font-family: Arial;
+  color: #ffffff;
+  font-size: 12px;
+  background: #3498db;
+  padding: 5px 10px 5px 10px;
+  text-decoration: none;
+}
+#loginbutton:hover
+{
+  background: #4876FF;
+  text-decoration: none;
+}
+#logoutbutton
+{
+  position: absolute;
+  top: 40px;
+  right: 0px;
+  -webkit-border-radius: 16;
+  -moz-border-radius: 16;
+  border-radius: 16px;
+  font-family: Arial;
+  color: #ffffff;
+  font-size: 12px;
+  background: #3498db;
+  padding: 5px 10px 5px 10px;
+  text-decoration: none;
+}
+#logoutbutton:hover
+{
+  background: #4876FF;
+  text-decoration: none;
+}
+.inputs
+{
+	  padding: 5px;
+  border: solid 1px #dcdcdc;
+  transition: box-shadow 0.3s, border 0.3s;
+}
+.inputs:focus
+{
+	  border: solid 3px #707070;
+  box-shadow: 0 0 5px 1px #969696;
+}

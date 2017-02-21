@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html style="height:100%" style="width:100%">
+<head>
+  <script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <link rel="stylesheet" href="jquery.timepicker.min.css">
+  <link rel="stylesheet" media ="(max-width: 600px)" href="createEventMobile.css">
+  <link rel="stylesheet" media = "(min-width:601px)" href = "createEvent.css">
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <script src="jquery.timepicker.min.js"></script>
+  <script src="http://connect.facebook.net/en_US/all.js"></script>
+  <script>
+  $(function() {
+    $( "#date" ).datepicker();
+  });
+  (function($) {
+    $(function() {
+      $('input#starttime').timepicker();
+    });
+  })(jQuery);
+  (function($) {
+    $(function() {
+      $('input#endtime').timepicker();
+    });
+  })(jQuery);
+  </script>
+</head>
+<body style="height:100%" style="width:100%" onload="getFacebookID()">
+  <script>
+  var request = new XMLHttpRequest();  
+  var geocoder;
+  var map;
+  var mapDiv = document.getElementById('map');
+  var facebook_id =undefined;
+  var event_name;
+  var event_address =undefined;
+  var event_description;
+  var lat =undefined;
+  var lng =undefined;
+  var date;
+  var starttime;
+  var endtime;
+  var name ='';
+  var myOptions = 
+  {
+    center: new google.maps.LatLng(42, -71),
+    zoom: 8
+  };
+
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '876024232520179',
+      xfbml      : true,
+      version    : 'v2.6',
+      status : true, // check login status
+    });
+  };
+
+  (function(d, s, id){
+   var js, fjs = d.getElementsByTagName(s)[0];
+   if (d.getElementById(id)) {return;}
+   js = d.createElement(s); js.id = id;
+   js.src = "//connect.facebook.net/en_US/sdk.js";
+   fjs.parentNode.insertBefore(js, fjs);
+ }(document, 'script', 'facebook-jssdk'));
+
+  function getFacebookID()
+  {
+    FB.getLoginStatus(function(response)
+    {
+      if (response.status === 'connected')
+      {
+        facebook_id = response.authResponse.userID;
+        FB.api('/me?fields=first_name', function(response) 
+        {
+          name = response.first_name;
+        });
+        FB.api('/me?fields=last_name', function(response) 
+        {
+          name = name + " " + response.last_name;
+        });
+        return;
+      }
+    });
+  }
+  function login() {
+    FB.getLoginStatus(function(response)
+    {
+      if (response.status === 'connected')
+      {
+        facebook_id = response.authResponse.userID;
+        FB.api('/me?fields=first_name', function(response) 
+        {
+          name = response.first_name;
+        });
+        FB.api('/me?fields=last_name', function(response) 
+        {
+          name = name + " " + response.last_name;
+        });
+
+        alert("You are already logged in");
+        myEvents();
+        return;
+      }
+      else 
+      {
+        FB.login(function(response) 
+        {
+          if (response.status === 'connected') 
+          {
+            alert("connected");
+            facebook_id = response.authResponse.userID;
+            FB.api('/me?fields=first_name', function(response) {
+              name = response.first_name;
+            });
+            FB.api('/me?fields=last_name', function(response) {
+              name = name + " " + response.last_name;
+            });
+            myEvents();
+          } 
+          else if (response.status === 'not_authorized') 
+          {
+            alert("not authorized");
+          } else 
+          {
+            alert('You are not logged into Facebook.');
+          }
+        });
+      }
+    });
+}
+
+function home()
+{
+  window.location="firstpage.html";
+
+}
+
+function remove()
+{
+  params = "facebook_id=" + facebook_id + "&event_name=" + event_name + "&event_address=" + event_address + "&event_description=" + event_description+ "&lat=" + lat + "&lng=" + lng + "&date=" + date + "&starttime=" + starttime + "&endtime=" + endtime + "&created_by=" + name;
+  request.open("POST", "https://lit-savannah-48405.herokuapp.com/removeEvent",true);
+  request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  request.send(params);
+  alert('Your event has been successfully removed.');
+  myEvents();
+}
+
+function logout() 
+{
+  FB.getLoginStatus(function(response)
+  {
+    if (response.status === 'connected')
+    {
+      FB.logout(function(response)
+      {
+        alert('Successfully logged out');
+        facebook_id = undefined;
+      });
+    }
+    else
+    {
+      alert('No user is currently logged in.');
+    }
+  });
+}
+
+function initialize() 
+{
+  geocoder = new google.maps.Geocoder();
+  map = new google.maps.Map(document.getElementById("map"), myOptions);
+  google.maps.event.addListener(map, 'click', function(event) 
+  {
+    placeMarker(event.latLng);
+  });
+
+  var marker;
+
+  function placeMarker(location) {
+    if(marker)
+    { 
+      marker.setPosition(location); 
+    }
+    else
+    {
+      marker = new google.maps.Marker({ 
+        position: location, 
+        map: map
+      });
+    }
+    document.getElementById('lat').value=location.lat();
+    lat = location.lat();
+    document.getElementById('lng').value=location.lng();
+    lng = location.lng();
+    getAddress(location);
+  }
+
+  function getAddress(latLng) 
+  {
+    geocoder.geocode( {'latLng': latLng}, function(results, status) 
+    {
+      if(status == google.maps.GeocoderStatus.OK)
+      {
+        if(results[0]) 
+        {
+          document.getElementById("event_address").value = results[0].formatted_address;
+          event_address = results[0].formatted_address;
+        }                    
+        else 
+        {
+          document.getElementById("event_address").value = "No results";
+        }
+      }
+      else 
+      {
+        document.getElementById("event_address").value = status;
+      }
+    });
+  }
+}
+
+function sendRequest()
+{
+  date = document.getElementById("date").value;
+  starttime = document.getElementById("starttime").value;
+  endtime = document.getElementById("endtime").value;
+  event_name= document.getElementById("event_name").value;
+  event_description= document.getElementById("event_description").value;
+  if (facebook_id == undefined)
+  {
+    alert("Please make sure you are logged in");
+    return;
+  }
+  else if (event_name == '' || event_address==undefined||event_description==''||lat == undefined || lng ==undefined || date ==''||starttime==''||endtime=='')
+  {
+    alert("Please fill in all the fields");
+    return;
+  }
+  params = "facebook_id=" + facebook_id + "&event_name=" + event_name + "&event_address=" + event_address + "&event_description=" + event_description+ "&lat=" + lat + "&lng=" + lng + "&date=" + date + "&starttime=" + starttime + "&endtime=" + endtime + "&created_by=" + name;
+  request.open("POST", "https://lit-savannah-48405.herokuapp.com/sendData",true);
+  request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  request.send(params);
+  alert('Your event has been successfully added.');
+  myEvents();
+}
+
+function myEvents()
+{
+    var request1 = new XMLHttpRequest();  
+
+  if (facebook_id == undefined)
+  {
+    document.getElementById("footer").innerHTML = "Please login to see your events.";
+  }
+  else
+  { 
+    request1.open("GET", "https://lit-savannah-48405.herokuapp.com/myEvents?facebook_id=980582115360858");
+    request1.onreadystatechange = function() 
+    {
+      if (request1.readyState == 4 && request1.status == 200){
+        data = request1.responseText;
+        parsed_data = JSON.parse(data);
+        document.getElementById("footer").innerHTML = "<h3>List of your Events: </h3><ul>";
+      
+        for (var count = 0; count < parsed_data.length; count++){
+          
+          event_lat = parsed_data[count]["lat"];
+          event_lng = parsed_data[count]["lng"];
+          event_name = parsed_data[count]["event_name"];
+          event_address = parsed_data[count]["event_address"];
+          event_description = parsed_data[count]["event_description"];
+          date = parsed_data[count]["date"];
+          starttime = parsed_data[count]["starttime"];
+          endtime = parsed_data[count]["endtime"];
+          created_by = parsed_data[count]["created_by"]; 
+          event_pos = new google.maps.LatLng(event_lat, event_lng);
+          
+          document.getElementById("footer").innerHTML += "<li><b>" + event_name + "</b>" + "<br>" + "<b>Description: </b>" + event_description + "<br>" + "<b>Address: </b>" +event_address + "<br>" + "<b>Date: </b>" + date + "<br>" + "<b>Start Time: </b>" + starttime + "<br>" + "<b>End Time</b>" + endtime + "<br><b>Created by: </b>"+ created_by + "<br><button onclick='remove()' id='removebutton'> Remove Button </button></li><br>";
+          
+        }
+        document.getElementById("footer").innerHTML += "</ul>";
+
+
+
+
+      }
+    }
+    request1.send();
+  }
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+</script>
+
+
+<div id="fb-root"></div>
+
+<div id="header">
+ <p style="text-align:center"> <img src="freehub_burned.png" alt="freehub_logo" /> </p>
+  <button onclick="login()" id="loginbutton"> Login </button>
+  <br>
+  <button onclick="logout()" id="logoutbutton"> Logout </button>
+  <button onclick="home()" id="home"> Home </button>
+
+</div>
+
+
+<div id="main-wrap">
+  <div id ="sidebar"> <div id="map"></div> </div>
+  <div id="content-wrap">
+    <br>
+    <p> Welcome to the create event page! Please click on the location of your event to enter the address into our data fields.</p>
+
+    <p>Event Address: <input type="text" id="event_address" readonly="readonly" size="45">
+      <br>
+      <input type="hidden" id="lat" readonly="readonly" size="10">
+      <input type="hidden" id="lng" readonly="readonly" size="10">
+      <br>
+      Event Name: <input type="text" id="event_name" size="30" class="inputs">
+      <br>
+      Event Description: <input type="text" id="event_description" size ="30" class="inputs"></p>
+
+      <p>Date: <input type="text" id="date" class="inputs" size="15"></p>
+      <p>Start Time:<input type="text" id="starttime" name="starttime" class="inputs" size = "15"/></p>
+      <p>End Time:<input type="text" id="endtime" name="endtime" class="inputs" size = "15"/></p>
+
+      <button onclick="sendRequest()" id="send"> Send to Database </button>
+    </div>
+  </div>
+
+  <div id="footer"> <button onclick="myEvents()" id="myeventbutton"> Click to see your events! </button></div>
+
+
+
+</body>
+
+</html>

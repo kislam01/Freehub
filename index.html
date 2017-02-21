@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html>
+
+	<head>
+		<title>FreeHub</title>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=true"></script>
+		<link rel="stylesheet" href="index_stylesheet.css" />
+		
+		<script>
+			var myLat = 0;
+			var myLng = 0;
+			var request = new XMLHttpRequest();
+			var me = new google.maps.LatLng(myLat, myLng);
+			var myOptions = {
+						zoom: 8, 
+						center: me,
+						mapTypeId: google.maps.MapTypeId.ROADMAP
+					};
+			var map;
+			var marker;
+			var event_icon = {
+				url:'hamburger.png',
+				scaledSize: new google.maps.Size(22,32)
+			};
+			var marker_array = [];
+			var parsed_data = "";
+			var event_info = [];
+			var event_infowindow = [];
+
+			function init()
+			{
+				map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+				getMyLocation();
+			}
+
+			function getMyLocation(){
+				if (navigator.geolocation) { 
+					navigator.geolocation.getCurrentPosition(function(position) {
+						myLat = position.coords.latitude;
+						myLng = position.coords.longitude;
+						renderMap();
+						sendRequest();
+					});
+				}
+				else {
+					alert("Geolocation is not supported by your web browser.");
+				}
+			}
+
+			function renderMap()
+			{
+				me = new google.maps.LatLng(myLat, myLng);
+				
+				// Update map and go there...
+				map.panTo(me);
+	
+				// Create a marker
+				marker = new google.maps.Marker({
+					position: me,
+					title: "This is you"
+				});
+				marker.setMap(map);
+				
+				// Open info window on click of marker
+				google.maps.event.addListener(marker, 'click', function() {
+					infowindow.setContent(marker.title);
+					infowindow.open(map, marker);
+				});
+			}
+
+			function sendRequest()
+			{
+				request.open("GET", "https://lit-savannah-48405.herokuapp.com/getEvents",true);
+
+				request.onreadystatechange = function() {
+					if (request.readyState == 4 && request.status == 200){
+						data = request.responseText;
+						parsed_data = JSON.parse(data);
+						eventMarker();
+						console.log(parsed_data);
+						}
+					}
+				request.send();		
+			}
+
+			function eventMarker(){
+	
+				document.getElementById("list_events").innerHTML = "<h3>Upcoming Events: </h3><ul>";
+				 
+				//document.getElementById("list_events").innerHTML = "<p>Hello world!</p>";;
+				if (parsed_data.length == 0) {
+					document.getElementById("list_events").innerHTML += "<p>Sorry! There are no upcoming events!</p>";
+				}else{
+
+					for (var count = 0; count < parsed_data.length; count++){
+					
+						event_lat = parsed_data[count]["lat"];
+						event_lng = parsed_data[count]["lng"];
+						event_name = parsed_data[count]["event_name"];
+						event_address = parsed_data[count]["event_address"];
+						event_description = parsed_data[count]["event_description"];
+						date = parsed_data[count]["date"];
+						starttime = parsed_data[count]["starttime"];
+						endtime = parsed_data[count]["endtime"];
+						created_by = parsed_data[count]["created_by"]; 
+						event_pos = new google.maps.LatLng(event_lat, event_lng);
+						dist_to_event = haversign_dist(event_lat, event_lng, myLat, myLng);
+
+						marker_array[count] = new google.maps.Marker({
+							position: event_pos,
+							title: event_name,
+							icon: event_icon
+						});	
+					
+						event_info[count] = "<b>Event Name:</b> " + event_name + "<br>" + "<b>Event Description:</b> " + event_description + "<br>" + "<b>Event Address:</b>" + event_address + "<br>" + "<b>Distance from you: </b>" + dist_to_event + " miles" + "<br><b>Date: </b>" + date + "<br>" + "<b>Start Time: </b>"+ starttime + "<br><b>End Time: </b>" + endtime + "<b><br>Created by: </b>"+ created_by ;
+						event_infowindow[count] = new google.maps.InfoWindow();
+						document.getElementById("list_events").innerHTML += "<li><b>" + event_name + "</b>" + "<br>" + "<b>Description: </b>" + event_description + "<br>" + "<b>Address: </b>" +event_address + "<br>" + "<b>Distance from you: </b>" + dist_to_event + " miles" + "<br><b>Date: </b>" + date + "<br>" + "<b>Start Time: </b>" + starttime + "<br>" + "<b>End Time</b>" + endtime + "<br><b>Created by: </b>"+ created_by + "</li><br>";
+					
+					}
+					document.getElementById("list_events").innerHTML += "</ul>";
+				} 
+
+				for (var i = 0; i < marker_array.length; i++){
+					google.maps.event.addListener(marker_array[i], 'click', (function(i) {
+        				return function() {
+        					event_infowindow[i].setContent(event_info[i]);
+          					event_infowindow[i].open(map,marker_array[i]);
+        				}
+      				})(i));
+      				marker_array[i].setMap(map);
+	
+					}
+			
+			function haversign_dist(lat1,lon1,lat2,lon2){
+
+				Number.prototype.toRad = function() {
+				   return this * Math.PI / 180;
+				}
+
+				var R = 6371; // km 
+				var x1 = lat2-lat1;
+				var dLat = x1.toRad();  
+				var x2 = lon2-lon1;
+				var dLon = x2.toRad();  
+				var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1.toRad()) * Math.cos(lat2.toRad()) * Math.sin(dLon/2) * Math.sin(dLon/2);
+				var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+				return R * c * 0.621371;  //miles 	
+
+			}		
+
+
+
+
+			}	
+	
+
+		</script>
+	</head>
+	
+	<body onload="init()">
+		<div id="main_wrap">
+			<div id="header">
+				<img src="freehub_burned.png" alt="freehub_logo" />
+
+			</div> <!-- end of header -->
+
+			<div id="map_sidebar">
+				<div id="map_canvas"></div>
+				<input type="button" onclick="location.href='createEvent.html';" value="Create an Event" />
+
+			</div> <!-- end of map_sidebar -->
+			
+				<div id="list_events">
+
+
+			</div> <!-- end of list_events -->
+
+
+			<div id="footer">
+
+			</div> <!-- end of footer -->
+		</div> <!-- end of main_wrap -->
+
+	</body>
+</html>			
